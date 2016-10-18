@@ -1,0 +1,13 @@
+var cell;
+
+exports.setSingleCell = function(JsonCell) {
+    cell = JsonCell;
+} 
+
+exports.getSingleCell = function() {
+    return cell;
+}
+
+exports.installAPK = function() {
+
+}

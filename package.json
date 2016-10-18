@@ -1,8 +1,7 @@
 {
   "name": "DevControl",
   "bin": {
-    "DevControl": "DevControl",
-    "ApplyResponse": "ApplyResponse"
+    "DevControl": "DevControl"
   },
   "dependencies": {
     "Promise": "^1.0.5",

@@ -2,8 +2,10 @@
 var adb = require('adbkit');
 var singlecell = require("./CellControl");
 var readline = require('readline');
+var fs = require('fs');
 var client = adb.createClient();
 var JsonCellList = {"cellphone" : []};
+
 
 client.trackDevices()
   .then(function(tracker) {
@@ -55,7 +57,8 @@ rl.on('line', function(line) {
             break;
         case 'installAPK':
             console.log('Wait for a moment.');
-            var apk = '/root/DevControl/app/com.paohaile.android.apk';
+            var files = fs.readdirSync('/root/DevControl/app/');
+            var apk = '/root/DevControl/app/' + files[0];e
             client.install(singlecell.getSingleCell().id, apk).then(function () {
                   console.log('Install complete.');
             });

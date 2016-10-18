@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+var adb = require('adbkit');
+var client = adb.createClient();
+var cellphones = require("./CellPhones");
+var JsonCellList = {"cellphone" : []};
+
+client.trackDevices()
+  .then(function(tracker) {
+    tracker.on('add', function(device) {
+      console.log('Device %s was plugged in', device.id);
+      var time = new Date().getTime();
+      var item = { "id" : device.id,
+		               "type" : device.type,
+                   "timestamp" : time,
+                   "status" : 0 };
+      JsonCellList.cellphone.push(item);
+      cellphones.setCells(JsonCellList);
+      console.log(cellphones.getCells());
+    });
+    tracker.on('remove', function(device) {
+      console.log('Device %s was unplugged', device.id);
+      delId = device.id;
+      for(i in JsonCellList.cellphone) {
+		if(JsonCellList.cellphone[i].id == delId) JsonCellList.cellphone.splice(i,1);
+	}
+      cellphones.setCells(JsonCellList);
+      console.log(cellphones.getCells());
+    });
+    tracker.on('end', function() {
+      console.log('Tracking stopped');
+    });
+  })
+  .catch(function(err) {
+    console.error('Something went wrong:', err.stack);
+  });
+
+
+

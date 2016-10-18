@@ -1,0 +1,10 @@
+var JsonCellList;
+
+exports.setCells = function(Cells) {
+    JsonCellList = Cells;
+}
+
+exports.getCells = function() {
+    return JsonCellList;
+}
+

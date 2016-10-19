@@ -18,11 +18,14 @@ client.trackDevices()
       JsonCellList.cellphone.push(item);
     });
     tracker.on('remove', function(device) {
-      delId = device.id;
+      var delId = device.id;
       for(i in JsonCellList.cellphone) {
 		    if(JsonCellList.cellphone[i].id == delId) JsonCellList.cellphone.splice(i,1);
-	}
-    });
+	  }
+      if(singlecell.getSingleCell() != null) {
+        if(delId == singlecell.getSingleCell().id) singlecell.setSingleCell(null);
+    }  
+  });
     tracker.on('end', function() {
       console.log('Tracking stopped');
     });
@@ -58,13 +61,19 @@ rl.on('line', function(line) {
         case 'installAPK':
             console.log('Wait for a moment.');
             var files = fs.readdirSync('/root/DevControl/app/');
-            var apk = '/root/DevControl/app/' + files[0];e
+            var apk = '/root/DevControl/app/' + files[0];
             client.install(singlecell.getSingleCell().id, apk).then(function () {
                   console.log('Install complete.');
             });
             break;
         case 'returnDevice':
-            
+            for(i in JsonCellList.cellphone){
+              if(JsonCellList.cellphone[i].id == singlecell.getSingleCell().id){
+                JsonCellList.cellphone[i].status = 0;
+                singlecell.setSingleCell(null);
+              }
+            }
+            console.log(JsonCellList);
             break;
         case 'close':
             rl.close();

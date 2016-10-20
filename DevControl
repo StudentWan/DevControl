@@ -5,6 +5,114 @@ var readline = require('readline');
 var fs = require('fs');
 var client = adb.createClient();
 var JsonCellList = {"cellphone" : []};
+var singleCellList = [];
+
+var app = require('express')();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+
+var users = {};
+
+app.get('/',function(req, res) {
+  res.sendFile(__dirname + '/index.html');
+});
+
+io.on('connection',function(socket) {
+
+  socket.on('new user', function(user) {
+    if(user in users) {
+      
+    } else {
+      var nickname = user;
+      users[nickname] = socket;
+    }
+
+    socket.on('disconnect', function(){
+    delete users[user];
+    if(singleCellList[user] != null){
+      for(i in JsonCellList.cellphone){
+        if(JsonCellList.cellphone[i].id == singleCellList[user].id){
+          JsonCellList.cellphone[i].status =0;
+        }
+      }
+      delete singleCellList[user];
+     
+    }
+    });
+  });
+
+  socket.on('request message', function(nickname,msg) {
+    var message;
+    if(nickname in users) {
+      if(msg == 'getDevice') { //get a cell
+        for(i in JsonCellList.cellphone) {
+              var temp = {"id" : JsonCellList.cellphone[i].id,
+		                      "type" : JsonCellList.cellphone[i].type,
+                          "timestamp" : JsonCellList.cellphone[i].timestamp};
+              if(JsonCellList.cellphone[i].status == 0) {
+                JsonCellList.cellphone[i].status = 1;
+                singlecell.setSingleCell(temp);
+                singleCellList[nickname] = singlecell.getSingleCell();
+                break;
+              }
+            }
+            if(singleCellList[nickname] == null) {
+              message = 'No cellphone available.';
+            } else {
+              message = 'id: ' + singleCellList[nickname].id + '\n'
+                      + 'type: ' + singleCellList[nickname].type + '\n'
+                      + 'timestamp: ' + singleCellList[nickname].timestamp + '\n.';
+            }
+            
+          users[nickname].emit('to' + nickname, message);
+
+      } else if(msg == 'installAPK') { //install an apk
+           var flag = 0;
+           for(i in singleCellList) {
+             if(i == nickname) flag =1;
+           }
+           if(flag == 1) {
+           var files = fs.readdirSync('/root/DevControl/app/');
+           var apk = '/root/DevControl/app/' + files[0];
+           client.install(singleCellList[nickname].id, apk).then(function () {
+              });
+           message = 'The installment will be finished in seconds.';
+            } else {
+              message = 'You don\'t hava a cellphone';
+            } 
+          users[nickname].emit('to' + nickname, message);     
+      } else if(msg == 'returnDevice') { //return the cell you borrowed
+        var flag = 0;
+        for(i in singleCellList){
+              if(i == nickname) {
+                for(j in JsonCellList.cellphone){
+                  if(JsonCellList.cellphone[j].id == singleCellList[i].id) {
+                    JsonCellList.cellphone[j].status = 0;
+                    break;
+                  }
+                }
+                delete singleCellList[i];  
+                message = nickname + ' has returned his/her phone.';
+                flag = 1;
+                break;
+              }
+        }
+        if(flag == 0) {
+          message = 'You didn\'t borrow a phone.';
+        } 
+      
+      users[nickname].emit('to' + nickname, message);
+      }
+    }
+    });
+
+    
+     
+});
+
+http.listen(3000, function() {
+  console.log('Listening on *:3000');
+});
 
 
 client.trackDevices()
@@ -22,9 +130,11 @@ client.trackDevices()
       for(i in JsonCellList.cellphone) {
 		    if(JsonCellList.cellphone[i].id == delId) JsonCellList.cellphone.splice(i,1);
 	  }
-      if(singlecell.getSingleCell() != null) {
-        if(delId == singlecell.getSingleCell().id) singlecell.setSingleCell(null);
-    }  
+      for(i in singleCellList) {
+        if(singleCellList[i].id == delId) {
+          delete singleCellList[i];
+        }
+      }
   });
     tracker.on('end', function() {
       console.log('Tracking stopped');
@@ -38,8 +148,6 @@ client.trackDevices()
 
 var rl = readline.createInterface(process.stdin, process.stdout);
 
-rl.setPrompt('> ');
-rl.prompt();
 
 rl.on('line', function(line) {
     switch(line.trim()) {
@@ -47,8 +155,8 @@ rl.on('line', function(line) {
             for(i in JsonCellList.cellphone) {
               var temp = JsonCellList.cellphone[i];
               if(temp.status == 0) {
-                singlecell.setSingleCell(temp);
                 temp.status = 1;
+                singlecell.setSingleCell(temp);
                 break;
               }
             }
@@ -82,7 +190,6 @@ rl.on('line', function(line) {
             console.log('Wrong input！');
             break;
     }
-    rl.prompt();
 });
 
 rl.on('close', function() {

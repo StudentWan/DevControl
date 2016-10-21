@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 var adb = require('adbkit');
-var singlecell = require("./CellControl");
-var readline = require('readline');
 var fs = require('fs');
 var client = adb.createClient();
 var JsonCellList = {"cellphone" : []};
+
+var singlecell = require("./CellControl");
 var singleCellList = [];
 
 var app = require('express')();
@@ -36,10 +36,9 @@ io.on('connection',function(socket) {
         }
       }
       delete singleCellList[user];
-     
     }
-    });
   });
+});
 
   socket.on('request message', function(nickname,msg) {
     var message;
@@ -65,7 +64,6 @@ io.on('connection',function(socket) {
             }
             
           users[nickname].emit('to' + nickname, message);
-
       } else if(msg == 'installAPK') { //install an apk
            var flag = 0;
            for(i in singleCellList) {
@@ -100,14 +98,12 @@ io.on('connection',function(socket) {
         if(flag == 0) {
           message = 'You didn\'t borrow a phone.';
         } 
-      
-      users[nickname].emit('to' + nickname, message);
+        users[nickname].emit('to' + nickname, message);
+      } else {
+        users[nickname].emit('to' + nickname, 'Wrong input!');
       }
-    }
+     }
     });
-
-    
-     
 });
 
 http.listen(3000, function() {
@@ -131,9 +127,7 @@ client.trackDevices()
 		    if(JsonCellList.cellphone[i].id == delId) JsonCellList.cellphone.splice(i,1);
 	  }
       for(i in singleCellList) {
-        if(singleCellList[i].id == delId) {
-          delete singleCellList[i];
-        }
+        if(singleCellList[i].id == delId) delete singleCellList[i];  
       }
   });
     tracker.on('end', function() {
@@ -143,59 +137,3 @@ client.trackDevices()
   .catch(function(err) {
     console.error('Something went wrong:', err.stack);
   });
-
-
-
-var rl = readline.createInterface(process.stdin, process.stdout);
-
-
-rl.on('line', function(line) {
-    switch(line.trim()) {
-        case 'getDevice':
-            for(i in JsonCellList.cellphone) {
-              var temp = JsonCellList.cellphone[i];
-              if(temp.status == 0) {
-                temp.status = 1;
-                singlecell.setSingleCell(temp);
-                break;
-              }
-            }
-            if(singlecell.getSingleCell() == null) {
-              console.log('No cellphone available!')
-            } else {
-              console.log(singlecell.getSingleCell());
-            }
-            break;
-        case 'installAPK':
-            console.log('Wait for a moment.');
-            var files = fs.readdirSync('/root/DevControl/app/');
-            var apk = '/root/DevControl/app/' + files[0];
-            client.install(singlecell.getSingleCell().id, apk).then(function () {
-                  console.log('Install complete.');
-            });
-            break;
-        case 'returnDevice':
-            for(i in JsonCellList.cellphone){
-              if(JsonCellList.cellphone[i].id == singlecell.getSingleCell().id){
-                JsonCellList.cellphone[i].status = 0;
-                singlecell.setSingleCell(null);
-              }
-            }
-            console.log(JsonCellList);
-            break;
-        case 'close':
-            rl.close();
-            break;
-        default:
-            console.log('Wrong input！');
-            break;
-    }
-});
-
-rl.on('close', function() {
-    console.log('Exit.');
-    process.exit(0);
-});
-
-
-

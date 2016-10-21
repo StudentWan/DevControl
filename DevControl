@@ -27,14 +27,14 @@ io.on('connection',function(socket) {
       users[nickname] = socket;
     }
 
-    socket.on('disconnect', function(){
-    delete users[user];
-    if(singleCellList[user] != null){
-      for(i in JsonCellList.cellphone){
-        if(JsonCellList.cellphone[i].id == singleCellList[user].id){
-          JsonCellList.cellphone[i].status =0;
+    socket.on('disconnect', function(){ //return the cellphone if disconnected
+      delete users[user];
+      if(singleCellList[user] != null){
+        for(i in JsonCellList.cellphone){
+          if(JsonCellList.cellphone[i].id == singleCellList[user].id){
+            JsonCellList.cellphone[i].status =0;
+          }
         }
-      }
       delete singleCellList[user];
     }
   });
@@ -45,10 +45,10 @@ io.on('connection',function(socket) {
     if(nickname in users) {
       if(msg == 'getDevice') { //get a cell
         for(i in JsonCellList.cellphone) {
-              var temp = {"id" : JsonCellList.cellphone[i].id,
-		                      "type" : JsonCellList.cellphone[i].type,
-                          "timestamp" : JsonCellList.cellphone[i].timestamp};
               if(JsonCellList.cellphone[i].status == 0) {
+                var temp = {"id" : JsonCellList.cellphone[i].id,
+		                        "type" : JsonCellList.cellphone[i].type,
+                            "timestamp" : JsonCellList.cellphone[i].timestamp};
                 JsonCellList.cellphone[i].status = 1;
                 singlecell.setSingleCell(temp);
                 singleCellList[nickname] = singlecell.getSingleCell();
@@ -62,12 +62,14 @@ io.on('connection',function(socket) {
                       + 'type: ' + singleCellList[nickname].type + '\n'
                       + 'timestamp: ' + singleCellList[nickname].timestamp + '\n.';
             }
-            
-          users[nickname].emit('to' + nickname, message);
+      users[nickname].emit('to' + nickname, message);
       } else if(msg == 'installAPK') { //install an apk
            var flag = 0;
            for(i in singleCellList) {
-             if(i == nickname) flag =1;
+             if(i == nickname) {
+               flag =1;
+               break;
+             } 
            }
            if(flag == 1) {
            var files = fs.readdirSync('/root/DevControl/app/');
@@ -78,8 +80,8 @@ io.on('connection',function(socket) {
             } else {
               message = 'You don\'t hava a cellphone';
             } 
-          users[nickname].emit('to' + nickname, message);     
-      } else if(msg == 'returnDevice') { //return the cell you borrowed
+        users[nickname].emit('to' + nickname, message);     
+      } else if(msg == 'returnDevice') { //return the cellphone you borrowed
         var flag = 0;
         for(i in singleCellList){
               if(i == nickname) {
@@ -125,7 +127,7 @@ client.trackDevices()
       var delId = device.id;
       for(i in JsonCellList.cellphone) {
 		    if(JsonCellList.cellphone[i].id == delId) JsonCellList.cellphone.splice(i,1);
-	  }
+	    }
       for(i in singleCellList) {
         if(singleCellList[i].id == delId) delete singleCellList[i];  
       }

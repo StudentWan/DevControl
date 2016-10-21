@@ -7,7 +7,3 @@ exports.setSingleCell = function(JsonCell) {
 exports.getSingleCell = function() {
     return cell;
 }
-
-exports.installAPK = function() {
-
-}
